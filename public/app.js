@@ -325,20 +325,22 @@ function popupRoad(f, lngLat) {
 // ── Tarjetas de compañía (las pestañas) ──────────────────────────────────────
 function setCard(key, big, sub, status) {
   $(`[data-big="${key}"]`).textContent = big;
-  $(`[data-sub="${key}"]`).innerHTML = sub;
+  const el = $(`[data-sub="${key}"]`);
+  el.innerHTML = sub;
+  el.title = sub.replace(/<em>/g, ' · ').replace(/<[^>]+>/g, ''); // texto completo al pasar el ratón
   $(`[data-sdot="${key}"]`).dataset.status = status;
 }
 const warn = (txt) => `<em>${esc(txt)}</em>`;
 
 function renderCards(live) {
   const by = (op) => live.trains.filter((t) => t.operator === op);
-  const issues = (svc) => Object.values(svc).filter((v) => v.status === 'grave' || v.status === 'retrasos').length;
+  const late = (list) => list.filter((t) => sev(t) === 1 || sev(t) === 2).length;
 
   const ren = by('renfe');
   const rd = ren.filter((t) => t.delaySeconds != null);
-  const ri = issues(live.railService.renfe);
+  const rl = late(ren);
   setCard('rodalies', pct(rd.filter((t) => t.delaySeconds <= ON_TIME.renfe).length, rd.length),
-    `${plural(ren.length, 'tren', 'trenes')}${ri ? warn(`${plural(ri, 'línea', 'líneas')} con retrasos`) : ''}`, worstStatus(live.railService.renfe));
+    `${plural(ren.length, 'tren', 'trenes')}${rl ? warn(`${rl} con retraso`) : ''}`, worstStatus(live.railService.renfe));
 
   const fgc = by('fgc');
   const fl = fgc.filter((t) => sev(t) === 1 || sev(t) === 2).length;
@@ -627,7 +629,7 @@ async function loadBusLines() {
 function renderBusCard() {
   if (!BUS.lines) { setCard('bus', '–', BUS.error ? 'sin conexión con Moventis' : 'cargando…', 'sin-trenes'); return; }
   const brands = new Set(BUS.lines.map((l) => l.brand)).size;
-  setCard('bus', String(BUS.lines.length), `${plural(brands, 'marca', 'marcas')} · tiempo real por parada`, 'normal');
+  setCard('bus', String(BUS.lines.length), `${plural(brands, 'marca', 'marcas')} · tiempo real`, 'normal');
 }
 
 const busLine = (id) => BUS.lines?.find((l) => l.id === id);
