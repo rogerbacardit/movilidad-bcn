@@ -613,7 +613,10 @@ async function getJsonOrThrow(url) {
 async function loadBusLines() {
   if (BUS.lines || BUS.loading) return;
   BUS.loading = true;
-  try { BUS.lines = (await getJsonOrThrow('api/bus-lineas')).lines; BUS.error = false; } catch { BUS.error = true; }
+  try { BUS.lines = (await getJsonOrThrow('api/bus-lineas')).lines; BUS.error = false; } catch {
+    BUS.error = true;
+    setTimeout(loadBusLines, 15_000); // p. ej. la función de Vercel en frío: se reintenta
+  }
   BUS.loading = false;
   renderBus();
   renderBusCard();
