@@ -129,6 +129,8 @@ map.on('load', () => {
   });
 
   S.mapReady = true;
+  // En móvil la atribución empieza plegada en su botón «i» para no tapar la leyenda
+  if (matchMedia('(max-width: 860px)').matches) document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
   applyMapTab(false);
   if (S.live) setTrains(S.live.trains);
   drawRoads();
@@ -535,7 +537,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refr
 // ── Pestañas e interacción ───────────────────────────────────────────────────
 function setTab(tab, animate = true) {
   if (!TABS[tab]) tab = 'rodalies';
-  if (tab !== S.tab) { S.focus = null; S.popup?.remove(); }
+  if (tab !== S.tab) { S.focus = null; S.popup?.remove(); $('#panel-body').scrollTop = 0; }
   S.tab = tab;
   $$('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
   $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
