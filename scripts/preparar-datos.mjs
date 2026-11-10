@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE = path.join(ROOT, 'data', 'cache');
-const UA = { 'user-agent': 'movilidad-bcn/0.1 (replica local de datos abiertos)' };
+const UA = { 'user-agent': 'movilidad-bcn/0.1 (datos abiertos)' };
 const RENFE_GTFS = 'https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip';
 const RENFE_LD_GTFS = 'https://ssl.renfe.com/gtransit/Fichero_AV_LD/google_transit.zip';
 const FGC_GTFS_FILES = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets/gtfs_zip/records?limit=20';

@@ -1,4 +1,4 @@
-// Cliente: sondea /api/live (como la web original), anima los trenes y pinta cada compañía en su pestaña.
+// Cliente: sondea /api/live, anima los trenes y pinta cada compañía en su pestaña.
 'use strict';
 
 const POLL_MS = 10_000;

@@ -51,7 +51,7 @@ function sendJson(res, data, extra = {}) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  // Igual que la web original: le decimos al navegador cuándo habrá datos nuevos.
+  // La cabecera x-data-next le dice al navegador cuándo habrá datos nuevos.
   if (url.pathname === '/api/live') return sendJson(res, buildLive(), { 'x-data-next': nextHintSeconds().toFixed(1) });
   if (url.pathname === '/api/carreteras') return sendJson(res, roadsPayload());
   if (url.pathname === '/api/history') return sendJson(res, readHistory(Math.min(168, Number(url.searchParams.get('h')) || 24)));

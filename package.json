@@ -1,8 +1,14 @@
 {
   "name": "movilidad-bcn",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Réplica local del panel de trenes y carreteras en directo (Rodalies, FGC, SCT) a partir de datos abiertos oficiales.",
+  "description": "Mobilitat: Rodalies, FGC, TRAM, AVE, bus Moventis y carreteras de Catalunya en directo, con datos abiertos oficiales.",
+  "license": "MIT",
+  "homepage": "https://movilidad-bcn.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rogerbacardit/movilidad-bcn.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"

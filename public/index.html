@@ -125,7 +125,7 @@
     <p>Un servidor local reúne los datos abiertos de los operadores y la página le pregunta cada pocos segundos. El servidor le indica cuándo tendrá datos nuevos (cabecera <code>x-data-next</code>), y cada tren se desliza de su posición anterior a la nueva.</p>
     <h3>Rodalies (Renfe)</h3>
     <p>Renfe publica la posición y el retraso de cada tren en GTFS-RT. Se consulta cada 15 s. El destino de cada tren sale del horario oficial. Un tren va «en hora» si lleva 3 minutos de retraso o menos (criterio de Renfe), y un retraso solo cuenta si se repite en dos lecturas seguidas.</p>
-    <p>Una línea está <strong>Grave</strong> si el retraso mediano de sus trenes llega a 15 minutos, y con <strong>Retrasos</strong> si pasa de 3 minutos o si algún tren lleva 15 o más. Es una simplificación: La Vanguardia mide la espera desde el andén cruzando el horario con el tiempo real.</p>
+    <p>Una línea está <strong>Grave</strong> si el retraso mediano de sus trenes llega a 15 minutos, y con <strong>Retrasos</strong> si pasa de 3 minutos o si algún tren lleva 15 o más. Es una aproximación: no tiene en cuenta cuánto espera el viajero en el andén respecto al horario.</p>
     <h3>FGC</h3>
     <p>FGC no publica los minutos de retraso: se calculan comparando la hora prevista de llegada con su horario oficial. FGC publica la posición y si cada tren va en hora (Geotren), y aparte la hora prevista de llegada a cada parada (GTFS-RT). El retraso es esa hora prevista menos la del horario en la próxima parada. Un tren va con retraso a partir de 3 minutos, como en Rodalies. Si no hay previsión, se usa el «en hora» de FGC. Las posiciones se consultan cada 30 s y las previsiones cada minuto, porque el acceso sin clave admite 5.000 peticiones al día.</p>
     <h3>TRAM</h3>
