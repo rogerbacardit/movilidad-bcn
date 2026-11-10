@@ -1,0 +1,14 @@
+{
+  "name": "movilidad-bcn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Réplica local del panel de trenes y carreteras en directo (Rodalies, FGC, SCT) a partir de datos abiertos oficiales.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "preparar": "node scripts/preparar-datos.mjs",
+    "start": "node --env-file-if-exists=.env server.mjs"
+  }
+}

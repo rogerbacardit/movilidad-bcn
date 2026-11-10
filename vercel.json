@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo sin dependencias",
+  "buildCommand": "node scripts/preparar-datos.mjs || echo 'Aviso: no se pudieron regenerar los datos estáticos; se usan los del repositorio'",
+  "outputDirectory": "public",
+  "regions": ["cdg1"],
+  "functions": {
+    "api/*.mjs": {
+      "maxDuration": 30,
+      "includeFiles": "{data/static.json,data/fgc-horarios.json,lib/**}"
+    }
+  }
+}

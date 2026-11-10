@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobilitat</title>
+  <meta name="description" content="Rodalies, FGC, AVE y carreteras de Catalunya en directo, a partir de datos abiertos oficiales.">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="panel" aria-label="Estado de la red">
+      <header class="head">
+        <h1 class="brand">Mobilitat</h1>
+        <span class="upd" id="upd">cargando…</span>
+      </header>
+
+      <nav class="ops" role="tablist" aria-label="Compañías">
+        <button role="tab" class="op" data-tab="rodalies" aria-selected="true">
+          <span class="op-name"><img class="op-logo" src="logos/rodalies.svg" alt="" width="20" height="20">Rodalies<i class="sdot" data-sdot="rodalies"></i></span>
+          <span class="op-main"><b data-big="rodalies">–</b><span data-unit="rodalies">en hora</span></span>
+          <span class="op-sub" data-sub="rodalies">cargando…</span>
+        </button>
+        <button role="tab" class="op" data-tab="fgc" aria-selected="false">
+          <span class="op-name"><img class="op-logo" src="logos/fgc.svg" alt="" width="20" height="20">FGC<i class="sdot" data-sdot="fgc"></i></span>
+          <span class="op-main"><b data-big="fgc">–</b><span data-unit="fgc">en hora</span></span>
+          <span class="op-sub" data-sub="fgc">cargando…</span>
+        </button>
+        <button role="tab" class="op" data-tab="ave" aria-selected="false">
+          <span class="op-name"><img class="op-logo wide" src="logos/ave.svg" alt="AVE" width="31" height="20">Larga distancia<i class="sdot" data-sdot="ave"></i></span>
+          <span class="op-main"><b data-big="ave">–</b><span data-unit="ave">puntuales</span></span>
+          <span class="op-sub" data-sub="ave">cargando…</span>
+        </button>
+        <button role="tab" class="op" data-tab="carreteras" aria-selected="false">
+          <span class="op-name"><svg class="op-logo" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#1f4e9c"/><path d="M7.4 3h5.2L16 17H4z" fill="#fff" opacity=".16"/><path d="M7.4 3 4 17M12.6 3 16 17M10 4.6v2.1M10 9.1v2.3M10 13.9v2.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>Carreteras<i class="sdot" data-sdot="carreteras"></i></span>
+          <span class="op-main"><b data-big="carreteras">–</b><span data-unit="carreteras">incidencias</span></span>
+          <span class="op-sub" data-sub="carreteras">cargando…</span>
+        </button>
+      </nav>
+
+      <section class="tabpanel" data-panel="rodalies" role="tabpanel">
+        <h2>Líneas</h2>
+        <div class="groups" id="groups-renfe"></div>
+        <h2>Directo</h2>
+        <ul class="events" id="events-rodalies"></ul>
+        <h2>Avisos oficiales</h2>
+        <ul class="alerts" id="alerts-active"></ul>
+        <h2>Obras y cortes previstos</h2>
+        <ul class="alerts" id="alerts-upcoming"></ul>
+      </section>
+
+      <section class="tabpanel" data-panel="fgc" role="tabpanel" hidden>
+        <h2>Líneas</h2>
+        <div class="groups" id="groups-fgc"></div>
+      </section>
+
+      <section class="tabpanel" data-panel="ave" role="tabpanel" hidden>
+        <h2>Corredores</h2>
+        <div class="groups" id="groups-ld"></div>
+        <h2>Directo</h2>
+        <ul class="events" id="events-ave"></ul>
+      </section>
+
+      <section class="tabpanel" data-panel="carreteras" role="tabpanel" hidden>
+        <h2>Retenciones y cortes</h2>
+        <ul class="roads" id="roads"></ul>
+        <div class="road-legend" aria-label="Código de color de las carreteras">
+          <span><span class="road auto">A-2</span>Autopista o autovía</span>
+          <span><span class="road n">N-II</span>Estado</span>
+          <span><span class="road r1">C-17</span>Generalitat, red básica</span>
+          <span><span class="road r2">B-224</span>Generalitat, comarcal y local</span>
+          <span><span class="road r3">BV-5303</span>Diputaciones</span>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <button class="link" id="open-how">Cómo se hace</button>
+      </footer>
+    </aside>
+
+    <main class="mapwrap">
+      <div id="map" role="region" aria-label="Mapa en directo"></div>
+      <div class="focus" id="focus" hidden>
+        <span class="focus-label"></span>
+        <button class="focus-x" id="focus-x" aria-label="Quitar selección">✕</button>
+      </div>
+      <div class="legend" id="legend">
+        <span><i class="d s0"></i>En hora</span>
+        <span><i class="d s1"></i>Retraso</span>
+        <span><i class="d s2"></i>≥ 15 min</span>
+        <span><i class="d su"></i>Sin dato</span>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="how">
+    <form method="dialog"><button class="close" aria-label="Cerrar">✕</button></form>
+    <h2>Cómo se hace</h2>
+    <p>Un servidor local reúne los datos abiertos de los operadores y la página le pregunta cada pocos segundos. El servidor le indica cuándo tendrá datos nuevos (cabecera <code>x-data-next</code>), y cada tren se desliza de su posición anterior a la nueva.</p>
+    <h3>Rodalies (Renfe)</h3>
+    <p>Renfe publica la posición y el retraso de cada tren en GTFS-RT. Se consulta cada 15 s. El destino de cada tren sale del horario oficial. Un tren va «en hora» si lleva 3 minutos de retraso o menos (criterio de Renfe), y un retraso solo cuenta si se repite en dos lecturas seguidas.</p>
+    <p>Una línea está <strong>Grave</strong> si el retraso mediano de sus trenes llega a 15 minutos, y con <strong>Retrasos</strong> si pasa de 3 minutos o si algún tren lleva 15 o más. Es una simplificación: La Vanguardia mide la espera desde el andén cruzando el horario con el tiempo real.</p>
+    <h3>FGC</h3>
+    <p>FGC no publica los minutos de retraso: se calculan comparando la hora prevista de llegada con su horario oficial. FGC publica la posición y si cada tren va en hora (Geotren), y aparte la hora prevista de llegada a cada parada (GTFS-RT). El retraso es esa hora prevista menos la del horario en la próxima parada. Un tren va con retraso a partir de 3 minutos, como en Rodalies. Si no hay previsión, se usa el «en hora» de FGC. Las posiciones se consultan cada 30 s y las previsiones cada minuto, porque el acceso sin clave admite 5.000 peticiones al día.</p>
+    <h3>AVE y larga distancia</h3>
+    <p>Renfe publica la posición, el retraso y las cancelaciones de sus trenes de alta velocidad y larga distancia. Se consulta cada 30 s y se muestran los que paran en alguna estación de Catalunya, agrupados por corredor según su recorrido en el horario oficial. Aquí un tren es puntual con menos de 5 minutos de retraso. Renfe no publica el trazado de estas líneas: al seleccionar un tren, su recorrido se dibuja uniendo sus estaciones en línea recta. Solo salen trenes de Renfe: Ouigo e Iryo no publican datos abiertos.</p>
+    <h3>Avisos</h3>
+    <p>Los avisos oficiales de Renfe para Rodalies, cada minuto. Los que todavía no han empezado salen en «Obras y cortes previstos».</p>
+    <h3>Carreteras</h3>
+    <p>Las incidencias del Servei Català de Trànsit, cada 3 minutos. Los textos llegan en catalán y se traducen con una tabla fija.</p>
+    <h3>En lo que va de día</h3>
+    <p>Cada tren cuenta una sola vez, con el último retraso que publicó. El servidor guarda además una muestra cada 5 minutos en <code>data/historial.jsonl</code>.</p>
+    <h3>Fuentes</h3>
+    <p>Información no oficial. Datos: Renfe Data (GTFS-RT), FGC Dades Obertes (Geotren y GTFS-RT), Servei Català de Trànsit. Mapa: OpenFreeMap, © OpenStreetMap. Los logos son marcas de sus operadores (Wikimedia Commons).</p>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

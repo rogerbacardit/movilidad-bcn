@@ -1,0 +1,6 @@
+.env
+.vercel/
+.DS_Store
+node_modules/
+data/cache/
+data/historial.jsonl
