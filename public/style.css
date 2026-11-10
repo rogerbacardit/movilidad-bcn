@@ -230,13 +230,13 @@ dialog p { margin: 4px 0 8px; font-size: 14.5px; }
 dialog h2 { font-size: 20px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 8px; }
 .close { float: right; background: none; border: 0; font-size: 18px; color: var(--muted); }
 
-/* Móvil: la pantalla en tres tercios — mapa / selectores de transporte / líneas.
-   Selectores y líneas se desplazan cada uno por su cuenta. */
+/* Móvil: la pantalla en tres partes — mapa / selectores de transporte / líneas.
+   Los selectores ocupan lo que necesitan (sin desplazamiento); mapa y líneas se reparten el resto. */
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); height: 100vh; height: 100dvh; }
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); height: 100vh; height: 100dvh; }
   .mapwrap { grid-row: 1; }
-  .panel { grid-row: 2 / 4; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); padding: 0; border-right: 0; border-top: 1px solid var(--line); overflow: hidden; }
-  .panel-top { overflow-y: auto; padding: 5px 12px 6px; border-bottom: 1px solid var(--line); }
+  .panel { grid-row: 2 / 4; display: grid; grid-template-rows: subgrid; padding: 0; border-right: 0; border-top: 1px solid var(--line); overflow: hidden; }
+  .panel-top { overflow: visible; padding: 5px 12px 7px; border-bottom: 1px solid var(--line); }
   .panel-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 18px; }
   .panel-body > .tabpanel > h2:first-child, .panel-body > .tabpanel > .search:first-child { margin-top: 12px; }
 
