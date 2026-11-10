@@ -1,6 +1,6 @@
 # movilidad-bcn
 
-Réplica local del panel «¿Cómo van los trenes?» de La Vanguardia (lavanguardia.com/movilidad): Rodalies, FGC, AVE y larga distancia, y carreteras de Catalunya en directo.
+Réplica local del panel «¿Cómo van los trenes?» de La Vanguardia (lavanguardia.com/movilidad): Rodalies, FGC, TRAM, AVE y larga distancia, bus Moventis y carreteras de Catalunya en directo.
 
 Hay una pestaña por compañía (Rodalies, FGC, AVE y larga distancia, Carreteras). Las tarjetas de arriba son a la vez el resumen y las pestañas. El mapa muestra solo la compañía elegida, y la pestaña queda en la URL: `#rodalies`, `#fgc`, `#ave` o `#carreteras`.
 
@@ -67,7 +67,8 @@ El navegador no habla con los operadores. Pregunta al servidor local, que le ind
 | `lib/engine.mjs` | Motor: consulta las fuentes, calcula el estado de cada línea y arma las respuestas |
 | `lib/gtfs-rt.mjs`, `lib/zip.mjs` | Lectores de GTFS-RT (protobuf) y de .zip, sin dependencias |
 | `server.mjs` | Servidor local: sondeo continuo, historial, API y página |
-| `api/` | Funciones de Vercel (`/api/live`, `/api/carreteras`) sobre el mismo motor |
+| `lib/moventis.mjs` | Bus Moventis: líneas, paradas y próximos buses, con caché |
+| `api/` | Funciones de Vercel (`/api/live`, `/api/carreteras`, `/api/bus-*`) sobre el mismo motor |
 | `public/` | Página: mapa MapLibre + OpenFreeMap, panel de líneas, avisos y carreteras |
 | `data/historial.jsonl` | Una muestra cada 5 min (se crea al arrancar) |
 
@@ -84,6 +85,8 @@ El navegador no habla con los operadores. Pregunta al servidor local, que le ind
 | Rodalies | `gtfsrt.renfe.com` (posiciones, retrasos y avisos, GTFS-RT en JSON) | No |
 | Rodalies (estático) | Renfe Data, GTFS de Cercanías (`fomento_transit.zip`) | No |
 | AVE y larga distancia | `gtfsrt.renfe.com/vehicle_positions_LD.json` y `trip_updates_LD.json` (posición, retraso, cancelaciones) | No |
+| TRAM | `opendata.tram.cat/api/v1`: `lines`, `lines/{id}/stops?page=0` y `StopTimes` (hora prevista y programada de los próximos tranvías en cada parada, con ocupación) | No |
+| Bus Moventis | JSON de su página de tiempo real (`www.moventis.es`): `/moventis/es/lines`, `/api/json/GetTrayectos/{línea}/{fecha}` y `/api/json/GetTiemposParada/es/{parada}/{línea}/0` | No (no son datos abiertos oficiales) |
 | AVE y larga distancia (estático) | Renfe Data, GTFS AV/LD/MD (`Fichero_AV_LD/google_transit.zip`) | No |
 | FGC | `dadesobertes.fgc.cat`: `posicionament-dels-trens` (posición, en hora, ocupación), `trip-updates-gtfs_realtime` (hora prevista por parada, protobuf) y `gtfs_zip` (horario) | No (límite de 5.000 peticiones al día por IP, sumando todos los conjuntos) |
 | Carreteras | `gencat.cat/transit/opendata/incidenciesGML.xml` | No |
@@ -121,6 +124,22 @@ FGC no publica el retraso, solo la hora prevista de llegada a cada parada (GTFS-
 - Renfe publica cada tren varias veces, una por variante de recorrido (el dígito tras el número de tren en el `trip_id`). Se queda la variante con más paradas, y las cancelaciones se agrupan igual.
 - La marca de tiempo del feed de posiciones LD va una hora por detrás (zona horaria), aunque las posiciones son actuales. Se usa la hora de recepción.
 - El servidor regenera los datos estáticos una vez al día, porque los `trip_id` de Renfe cambian con cada periodo de horarios.
+
+### TRAM
+
+- El TRAM publica, para cada parada y sentido (`outboundCode` / `returnCode`), la hora prevista y la programada de los próximos tranvías. Se consulta cada 20 s.
+- El retraso es la diferencia entre las dos horas en la próxima parada del tranvía.
+- La posición no se publica: se estima entre la parada anterior y la siguiente según lo que le falta para llegar, como hace La Vanguardia con el metro.
+- El trazado se dibuja uniendo las paradas en orden. Todas las líneas usan el verde corporativo `#008D78`.
+- La ocupación llega en cinco niveles (de `EMPTY` a `FULL`) y se muestra en la misma barra de 5 tramos que FGC.
+
+### Bus Moventis
+
+- Moventis (Empresa Casas, Moventis, Sarbus, Sarfa y TCC Barcelona: 89 líneas) no publica datos abiertos. Se usan los JSON públicos de su página «Tiempo real», sin claves.
+- No publica la posición de los buses, solo los próximos pasos por parada. Por eso funciona bajo demanda: líneas → recorridos y paradas → próximos buses de la parada elegida.
+- Cachés ([lib/moventis.mjs](lib/moventis.mjs)): líneas y paradas 12 h; tiempos de una parada 30 s (en Vercel, además, la CDN).
+- En verde, los minutos en tiempo real; en gris, la hora del horario. El recorrido del mapa une las paradas en línea recta.
+- Al no ser una API oficial, puede cambiar sin aviso.
 
 ### Carreteras: código de color
 

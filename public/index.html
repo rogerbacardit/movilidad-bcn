@@ -27,10 +27,20 @@
           <span class="op-main"><b data-big="fgc">–</b><span data-unit="fgc">en hora</span></span>
           <span class="op-sub" data-sub="fgc">cargando…</span>
         </button>
+        <button role="tab" class="op" data-tab="tram" aria-selected="false">
+          <span class="op-name"><img class="op-logo tile-tram" src="logos/tram.svg" alt="" width="20" height="20">TRAM<i class="sdot" data-sdot="tram"></i></span>
+          <span class="op-main"><b data-big="tram">–</b><span data-unit="tram">en hora</span></span>
+          <span class="op-sub" data-sub="tram">cargando…</span>
+        </button>
         <button role="tab" class="op" data-tab="ave" aria-selected="false">
           <span class="op-name"><img class="op-logo wide" src="logos/ave.svg" alt="AVE" width="31" height="20">Larga distancia<i class="sdot" data-sdot="ave"></i></span>
           <span class="op-main"><b data-big="ave">–</b><span data-unit="ave">puntuales</span></span>
           <span class="op-sub" data-sub="ave">cargando…</span>
+        </button>
+        <button role="tab" class="op" data-tab="bus" aria-selected="false">
+          <span class="op-name"><svg class="op-logo" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#2b4c7e"/><rect x="5" y="3.6" width="10" height="11" rx="2" fill="#fff"/><rect x="6.3" y="5.2" width="7.4" height="4.2" rx=".8" fill="#2b4c7e"/><circle cx="7.4" cy="12.2" r=".95" fill="#2b4c7e"/><circle cx="12.6" cy="12.2" r=".95" fill="#2b4c7e"/><rect x="6" y="14.6" width="2" height="1.8" rx=".5" fill="#fff"/><rect x="12" y="14.6" width="2" height="1.8" rx=".5" fill="#fff"/></svg>Bus Moventis<i class="sdot" data-sdot="bus"></i></span>
+          <span class="op-main"><b data-big="bus">–</b><span data-unit="bus">líneas</span></span>
+          <span class="op-sub" data-sub="bus">cargando…</span>
         </button>
         <button role="tab" class="op" data-tab="carreteras" aria-selected="false">
           <span class="op-name"><svg class="op-logo" viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#1f4e9c"/><path d="M7.4 3h5.2L16 17H4z" fill="#fff" opacity=".16"/><path d="M7.4 3 4 17M12.6 3 16 17M10 4.6v2.1M10 9.1v2.3M10 13.9v2.5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>Carreteras<i class="sdot" data-sdot="carreteras"></i></span>
@@ -55,11 +65,21 @@
         <div class="groups" id="groups-fgc"></div>
       </section>
 
+      <section class="tabpanel" data-panel="tram" role="tabpanel" hidden>
+        <h2>Líneas</h2>
+        <div class="groups" id="groups-tram"></div>
+      </section>
+
       <section class="tabpanel" data-panel="ave" role="tabpanel" hidden>
         <h2>Corredores</h2>
         <div class="groups" id="groups-ld"></div>
         <h2>Directo</h2>
         <ul class="events" id="events-ave"></ul>
+      </section>
+
+      <section class="tabpanel" data-panel="bus" role="tabpanel" hidden>
+        <input class="search" id="bus-search" type="search" placeholder="Buscar línea, pueblo o destino" aria-label="Buscar línea de bus" autocomplete="off">
+        <div class="groups" id="groups-bus"></div>
       </section>
 
       <section class="tabpanel" data-panel="carreteras" role="tabpanel" hidden>
@@ -103,8 +123,12 @@
     <p>Una línea está <strong>Grave</strong> si el retraso mediano de sus trenes llega a 15 minutos, y con <strong>Retrasos</strong> si pasa de 3 minutos o si algún tren lleva 15 o más. Es una simplificación: La Vanguardia mide la espera desde el andén cruzando el horario con el tiempo real.</p>
     <h3>FGC</h3>
     <p>FGC no publica los minutos de retraso: se calculan comparando la hora prevista de llegada con su horario oficial. FGC publica la posición y si cada tren va en hora (Geotren), y aparte la hora prevista de llegada a cada parada (GTFS-RT). El retraso es esa hora prevista menos la del horario en la próxima parada. Un tren va con retraso a partir de 3 minutos, como en Rodalies. Si no hay previsión, se usa el «en hora» de FGC. Las posiciones se consultan cada 30 s y las previsiones cada minuto, porque el acceso sin clave admite 5.000 peticiones al día.</p>
+    <h3>TRAM</h3>
+    <p>El TRAM (Trambaix y Trambesòs) publica en su portal de datos abiertos la hora prevista y la programada de los próximos tranvías en cada parada, con su ocupación. Se consulta cada 20 s. El retraso es la diferencia entre las dos horas en la próxima parada. El TRAM no publica la posición de los tranvías: se estima entre la parada anterior y la siguiente según lo que falta para llegar, y el trazado se dibuja uniendo las paradas.</p>
     <h3>AVE y larga distancia</h3>
     <p>Renfe publica la posición, el retraso y las cancelaciones de sus trenes de alta velocidad y larga distancia. Se consulta cada 30 s y se muestran los que paran en alguna estación de Catalunya, agrupados por corredor según su recorrido en el horario oficial. Aquí un tren es puntual con menos de 5 minutos de retraso. Renfe no publica el trazado de estas líneas: al seleccionar un tren, su recorrido se dibuja uniendo sus estaciones en línea recta. Solo salen trenes de Renfe: Ouigo e Iryo no publican datos abiertos.</p>
+    <h3>Bus Moventis</h3>
+    <p>Moventis (Empresa Casas, Sarbus, Sarfa, TCC…) no publica datos abiertos: se usan los mismos datos que su página de tiempo real. Las líneas y paradas se piden una vez cada 12 horas, y los próximos buses de una parada solo al seleccionarla (se renuevan cada 30 s). En verde, los minutos en tiempo real; en gris, la hora del horario. Moventis no publica la posición de los buses.</p>
     <h3>Avisos</h3>
     <p>Los avisos oficiales de Renfe para Rodalies, cada minuto. Los que todavía no han empezado salen en «Obras y cortes previstos».</p>
     <h3>Carreteras</h3>
@@ -112,7 +136,7 @@
     <h3>En lo que va de día</h3>
     <p>Cada tren cuenta una sola vez, con el último retraso que publicó. El servidor guarda además una muestra cada 5 minutos en <code>data/historial.jsonl</code>.</p>
     <h3>Fuentes</h3>
-    <p>Información no oficial. Datos: Renfe Data (GTFS-RT), FGC Dades Obertes (Geotren y GTFS-RT), Servei Català de Trànsit. Mapa: OpenFreeMap, © OpenStreetMap. Los logos son marcas de sus operadores (Wikimedia Commons).</p>
+    <p>Información no oficial. Datos: Renfe Data (GTFS-RT), FGC Dades Obertes (Geotren y GTFS-RT), TRAM OpenData, Moventis (web de tiempo real), Servei Català de Trànsit. Mapa: OpenFreeMap, © OpenStreetMap. Los logos son marcas de sus operadores (Wikimedia Commons).</p>
   </dialog>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>

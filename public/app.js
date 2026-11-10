@@ -13,10 +13,12 @@ const MAX_DOTS = 24;
 const TABS = {
   rodalies: { op: 'renfe', bounds: [[1.2, 40.95], [3.0, 42.1]] },
   fgc: { op: 'fgc', bounds: [[1.55, 41.25], [2.3, 41.85]] },
+  tram: { op: 'tram', bounds: [[2.03, 41.355], [2.235, 41.43]] },
   ave: { op: 'ld', bounds: [[-9.4, 36.0], [5.6, 45.9]] },
+  bus: { op: null, bounds: [[1.85, 41.25], [3.3, 42.1]] },
   carreteras: { op: null, bounds: [[0.15, 40.5], [3.35, 42.9]] },
 };
-const ON_TIME = { renfe: 180, fgc: 180, ld: 300 };
+const ON_TIME = { renfe: 180, fgc: 180, tram: 180, ld: 300 };
 
 // focus: línea, corredor o tren seleccionado → { op, kind: 'line' | 'corridor', id, trainId? }
 const S = { live: null, roads: [], anim: new Map(), tab: 'rodalies', open: new Set(), focus: null, timer: null, mapReady: false };
@@ -80,11 +82,16 @@ map.on('load', () => {
   map.addSource('trenes', { type: 'geojson', data: empty });
   map.addSource('carreteras', { type: 'geojson', data: empty });
   map.addSource('ruta', { type: 'geojson', data: empty });
+  map.addSource('bus-ruta', { type: 'geojson', data: empty });
+  map.addSource('bus-paradas', { type: 'geojson', data: empty });
 
   map.addLayer({ id: 'vias', type: 'line', source: 'vias', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.5, 13, 4], 'line-opacity': 0.7 } });
   map.addLayer({ id: 'estaciones', type: 'circle', source: 'estaciones', minzoom: 11, paint: { 'circle-radius': 3, 'circle-color': '#fff', 'circle-stroke-color': '#777', 'circle-stroke-width': 1 } });
   map.addLayer({ id: 'estaciones-nombre', type: 'symbol', source: 'estaciones', minzoom: 13, layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-offset': [0, 1], 'text-anchor': 'top' }, paint: { 'text-color': '#555', 'text-halo-color': '#fff', 'text-halo-width': 1.2 } });
   map.addLayer({ id: 'carreteras', type: 'circle', source: 'carreteras', paint: { 'circle-radius': ['interpolate', ['linear'], ['get', 'level'], 2, 4, 5, 8], 'circle-color': ['case', ['==', ['get', 'type'], 'Retención'], '#d23b2f', '#555'], 'circle-opacity': 0.8, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } });
+  // Bus Moventis: recorrido y paradas de la línea abierta
+  map.addLayer({ id: 'bus-ruta', type: 'line', source: 'bus-ruta', layout: { 'line-join': 'round', 'line-cap': 'round', visibility: 'none' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.85 } });
+  map.addLayer({ id: 'bus-paradas', type: 'circle', source: 'bus-paradas', layout: { visibility: 'none' }, paint: { 'circle-radius': ['case', ['get', 'sel'], 8, 5], 'circle-color': '#ffffff', 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': ['case', ['get', 'sel'], 4, 2.5] } });
   // Recorrido del AVE seleccionado y halo del tren seleccionado
   map.addLayer({ id: 'ruta', type: 'line', source: 'ruta', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-opacity': 0.85, 'line-dasharray': [2, 1.5] } });
   map.addLayer({ id: 'tren-sel', type: 'circle', source: 'trenes', filter: ['==', ['get', 'id'], ''], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 12, 13, 19], 'circle-color': ['get', 'color'], 'circle-opacity': 0.25, 'circle-stroke-color': ['get', 'color'], 'circle-stroke-width': 2 } });
@@ -111,6 +118,11 @@ map.on('load', () => {
   }
   map.on('click', 'trenes', (e) => selectTrain(e.features[0].properties.id, { fly: false, lngLat: e.lngLat }));
   map.on('click', 'carreteras', (e) => popupRoad(e.features[0], e.lngLat));
+  map.on('click', 'bus-paradas', (e) => openBusStop(e.features[0].properties.id));
+  for (const id of ['bus-paradas']) {
+    map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+  }
   // Pulsar el mapa fuera de un tren quita la selección
   map.on('click', (e) => {
     if (S.focus && !map.queryRenderedFeatures(e.point, { layers: ['trenes'] }).length) clearFocus();
@@ -130,7 +142,7 @@ function applyMapTab(animate = true) {
   if (!S.mapReady) return;
   const { op, bounds } = TABS[S.tab];
   const show = (id, on) => map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
-  const railOp = op === 'renfe' || op === 'fgc' ? op : null;
+  const railOp = ['renfe', 'fgc', 'tram'].includes(op) ? op : null;
   for (const id of ['vias', 'estaciones', 'estaciones-nombre']) {
     show(id, !!railOp);
     if (railOp) map.setFilter(id, railFilter(railOp));
@@ -139,6 +151,8 @@ function applyMapTab(animate = true) {
   show('trenes-linea', !!op);
   show('trenes-retraso', !!op);
   show('carreteras', S.tab === 'carreteras');
+  show('bus-ruta', S.tab === 'bus');
+  show('bus-paradas', S.tab === 'bus');
   $('#legend').hidden = !op;
   map.fitBounds(bounds, { padding: 30, duration: animate ? 900 : 0 });
   applyFocus();
@@ -329,6 +343,11 @@ function renderCards(live) {
   setCard('fgc', pct(fgc.length - fl, fgc.length),
     `${plural(fgc.length, 'tren', 'trenes')}${fl ? warn(`${fl} con retraso`) : ''}`, worstStatus(live.railService.fgc));
 
+  const tram = by('tram');
+  const tl = tram.filter((t) => sev(t) === 1 || sev(t) === 2).length;
+  setCard('tram', pct(tram.length - tl, tram.length),
+    `${plural(tram.length, 'tranvía', 'tranvías')}${tl ? warn(`${tl} con retraso`) : ''}`, worstStatus(live.railService.tram));
+
   const ld = by('ld');
   const lw = ld.filter((t) => t.delaySeconds != null);
   const canc = live.sources.ld?.cancelled ?? 0;
@@ -350,7 +369,7 @@ function dots(trains) {
 
 // Una frase que resume la línea: lo primero que hay que saber.
 function fact(op, trains, v) {
-  const n = plural(trains.length, 'tren', 'trenes');
+  const n = op === 'tram' ? plural(trains.length, 'tranvía', 'tranvías') : plural(trains.length, 'tren', 'trenes');
   const late = trains.filter((t) => sev(t) === 1 || sev(t) === 2);
   const mins = late.map((t) => t.delaySeconds).filter((d) => d != null);
   if (trains.every((t) => sev(t) === 'u')) return `${n} · sin datos de retraso`;
@@ -362,7 +381,7 @@ function fact(op, trains, v) {
 function trainRow(t) {
   const lead = t.operator === 'ld' ? badge(t.productName, colorOf(t)) : '';
   return `<li><button class="tr${S.focus?.trainId === t.id ? ' is-sel' : ''}" data-train="${esc(t.id)}">
-    <span class="tr-main"><span class="tr-title">${lead}${trainTitle(t)}</span><span class="tr-sub"><span class="tr-where">${esc(trainWhere(t))}</span>${t.operator === 'fgc' ? occBar(t.occupancyPct) : ''}</span></span>
+    <span class="tr-main"><span class="tr-title">${lead}${trainTitle(t)}</span><span class="tr-sub"><span class="tr-where">${esc(trainWhere(t))}</span>${t.occupancyPct != null ? occBar(t.occupancyPct) : ''}</span></span>
     ${board(t)}
   </button></li>`;
 }
@@ -389,7 +408,7 @@ function group({ key, op, lead, title, status, trains, v, details, extra }) {
 const todayText = (v, word) => (v.today ? `Hoy: ${v.today.onTimePct}% ${word} (${plural(v.today.trips, 'tren', 'trenes')})` : '');
 
 function renderGroups(live) {
-  for (const op of ['renfe', 'fgc']) {
+  for (const op of ['renfe', 'fgc', 'tram']) {
     const svc = live.railService[op];
     const trainsBy = (line) => live.trains.filter((t) => t.operator === op && t.line === line);
     const keys = Object.keys(svc).sort((a, b) => RANK[svc[b].status] - RANK[svc[a].status] || lineOrder(a, b));
@@ -400,7 +419,7 @@ function renderGroups(live) {
       return group({ key: `${op}:${line}`, op, lead: badge(line, v.color), status: v.status, trains: trainsBy(line), v, details: [v.name, todayText(v, 'en hora')].filter(Boolean).join(' · ') });
     }).join('');
     // Las líneas sin trenes se agrupan en una sola fila (FGC tiene muchas turísticas o sin servicio diario)
-    if (idle.length && op === 'renfe') html += `<div class="idle"><span>Sin trenes ahora</span>${idle.map((l) => badge(l, svc[l].color)).join('')}</div>`;
+    if (idle.length && op !== 'fgc') html += `<div class="idle"><span>Sin trenes ahora</span>${idle.map((l) => badge(l, svc[l].color)).join('')}</div>`;
     $(`#groups-${op}`).innerHTML = html || '<p class="empty">Sin datos.</p>';
   }
 
@@ -457,7 +476,7 @@ function drawRoads() {
 function renderStatus(error) {
   const el = $('#upd');
   const src = S.live?.sources ?? {};
-  const names = { renfe: 'Rodalies', fgc: 'FGC', ld: 'AVE' };
+  const names = { renfe: 'Rodalies', fgc: 'FGC', tram: 'TRAM', ld: 'AVE' };
   const down = Object.keys(names).filter((k) => src[k] && !src[k].ok).map((k) => names[k]);
   const age = S.live ? Date.now() - S.live.queriedAt : Infinity;
   el.classList.toggle('is-error', !!error);
@@ -522,6 +541,7 @@ function setTab(tab, animate = true) {
   $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
   if (location.hash.slice(1) !== tab) history.replaceState(null, '', `#${tab}`);
   applyMapTab(animate);
+  if (tab === 'bus') { loadBusLines(); drawBus(true); }
 }
 
 window.addEventListener('hashchange', () => setTab(location.hash.slice(1)));
@@ -531,6 +551,12 @@ document.addEventListener('click', (e) => {
   if (tab) return setTab(tab.dataset.tab);
   const tr = e.target.closest('[data-train]');
   if (tr) return focusTrain(tr.dataset.train);
+  const bl = e.target.closest('[data-bus-line]');
+  if (bl) return openBusLine(Number(bl.dataset.busLine));
+  const br = e.target.closest('[data-bus-route]');
+  if (br) { BUS.route[BUS.open] = Number(br.dataset.busRoute); BUS.stop = null; renderBus(); drawBus(true); return; }
+  const bs = e.target.closest('[data-bus-stop]');
+  if (bs) return openBusStop(Number(bs.dataset.busStop));
   const tg = e.target.closest('[data-toggle]');
   if (tg) return toggleGroup(tg.dataset.toggle);
   if (e.target.closest('#focus-x')) return clearFocus();
@@ -575,6 +601,125 @@ function selectTrain(id, { fly = true, lngLat } = {}) {
 }
 const focusTrain = (id) => selectTrain(id);
 
+// ── Bus Moventis (bajo demanda: líneas → paradas → próximos buses) ───────────
+const BUS = { lines: null, error: false, loading: false, open: null, route: {}, stops: new Map(), times: new Map(), stop: null, q: '' };
+
+async function getJsonOrThrow(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function loadBusLines() {
+  if (BUS.lines || BUS.loading) return;
+  BUS.loading = true;
+  try { BUS.lines = (await getJsonOrThrow('api/bus-lineas')).lines; BUS.error = false; } catch { BUS.error = true; }
+  BUS.loading = false;
+  renderBus();
+  renderBusCard();
+}
+
+function renderBusCard() {
+  if (!BUS.lines) { setCard('bus', '–', BUS.error ? 'sin conexión con Moventis' : 'cargando…', 'sin-trenes'); return; }
+  const brands = new Set(BUS.lines.map((l) => l.brand)).size;
+  setCard('bus', String(BUS.lines.length), `${plural(brands, 'marca', 'marcas')} · tiempo real por parada`, 'normal');
+}
+
+const busLine = (id) => BUS.lines?.find((l) => l.id === id);
+const busBadge = (l) => `<span class="badge" style="background:${esc(l.color)};color:${esc(l.textColor)}">${esc(l.code)}</span>`;
+const busRoute = () => BUS.stops.get(BUS.open)?.routes?.[BUS.route[BUS.open] ?? 0];
+
+function depBoard(d) {
+  if (d.realtime) return `<span class="board s0" title="Tiempo real">${d.minutes < 1 ? 'NOW' : `${Math.round(d.minutes)} MIN`}</span>`;
+  return `<span class="board su" title="Horario">${esc(d.time ?? `${Math.round(d.minutes)} MIN`)}</span>`;
+}
+function depList(list) {
+  if (!list?.length) return '<p class="empty">Sin salidas próximas.</p>';
+  return `<ul class="deps-list">${list.slice(0, 5).map((d) => `<li><span class="tr-title"><span class="dest">${TO} ${esc(d.destination)}</span></span>${depBoard(d)}</li>`).join('')}</ul>`;
+}
+function stopDepartures(stopId) {
+  const t = BUS.times.get(`${stopId}:${BUS.open}`);
+  if (!t) return '<p class="empty">Consultando…</p>';
+  if (t.error) return '<p class="empty">No se pudo consultar Moventis.</p>';
+  const mine = t.data.lines.find((x) => x.selected) ?? t.data.lines[0];
+  let html = depList(mine?.departures);
+  const others = t.data.lines.filter((x) => x !== mine && x.departures.length);
+  if (others.length) html += `<p class="grp-details">También paran: ${others.map((o) => esc(o.name.split(' - ')[0])).join(' · ')}</p>`;
+  return html;
+}
+
+function renderBus() {
+  const el = $('#groups-bus');
+  if (!el) return;
+  if (!BUS.lines) { el.innerHTML = `<p class="empty">${BUS.error ? 'No se pudieron cargar las líneas de Moventis.' : 'Cargando líneas…'}</p>`; return; }
+  const q = BUS.q.trim().toLowerCase();
+  const lines = BUS.lines.filter((l) => !q || l.code.toLowerCase().includes(q) || l.name.toLowerCase().includes(q) || l.brand.toLowerCase().includes(q));
+  const brands = [...new Set(lines.map((l) => l.brand))];
+  el.innerHTML = brands.map((b) => `<h3 class="brand-h">${esc(b)}</h3>${lines.filter((l) => l.brand === b).map(busLineRow).join('')}`).join('') || '<p class="empty">Ninguna línea coincide.</p>';
+}
+
+function busLineRow(l) {
+  const open = BUS.open === l.id;
+  let body = '';
+  if (open) {
+    const d = BUS.stops.get(l.id);
+    if (!d) body = '<p class="empty">Cargando paradas…</p>';
+    else if (d.error || !d.routes?.length) body = '<p class="empty">No hay recorridos para hoy.</p>';
+    else {
+      const ri = BUS.route[l.id] ?? 0;
+      body = `<div class="routes">${d.routes.map((r, i) => `<button class="route${i === ri ? ' is-on' : ''}" data-bus-route="${i}">${esc(r.name)}</button>`).join('')}</div>`
+        + `<ul class="trains">${d.routes[ri].stops.map((st) => `<li><button class="tr${BUS.stop === st.id ? ' is-sel' : ''}" data-bus-stop="${st.id}"><span class="tr-main"><span class="tr-title">${esc(st.name)}</span><span class="tr-sub"><span class="tr-where">${esc(st.town)}</span></span></span><span class="chev" aria-hidden="true"></span></button>${BUS.stop === st.id ? `<div class="deps">${stopDepartures(st.id)}</div>` : ''}</li>`).join('')}</ul>`;
+    }
+  }
+  return `<div class="grp${open ? ' is-open is-focus' : ''}"><button class="grp-head" data-bus-line="${l.id}" aria-expanded="${open}">${busBadge(l)}<span class="grp-main"><span class="grp-title">${esc(l.name)}</span></span><span></span><span class="chev" aria-hidden="true"></span></button>${open ? `<div class="grp-body">${body}</div>` : ''}</div>`;
+}
+
+async function openBusLine(id) {
+  if (BUS.open === id) { BUS.open = null; BUS.stop = null; S.popup?.remove(); renderBus(); drawBus(); return; }
+  BUS.open = id;
+  BUS.stop = null;
+  S.popup?.remove();
+  renderBus();
+  if (!BUS.stops.has(id)) {
+    try { BUS.stops.set(id, await getJsonOrThrow(`api/bus-paradas?linea=${id}`)); } catch { BUS.stops.set(id, { error: true }); }
+  }
+  // Por defecto, el recorrido principal con más paradas
+  const routes = BUS.stops.get(id).routes ?? [];
+  if (BUS.route[id] == null && routes.length) BUS.route[id] = routes.reduce((best, r, i) => (r.stops.length > routes[best].stops.length ? i : best), 0);
+  if (BUS.open === id) { renderBus(); drawBus(true); }
+}
+
+async function openBusStop(stopId, quiet = false) {
+  if (!BUS.open) return;
+  BUS.stop = stopId;
+  if (!quiet) { renderBus(); drawBus(); }
+  const key = `${stopId}:${BUS.open}`;
+  try { BUS.times.set(key, { at: Date.now(), data: await getJsonOrThrow(`api/bus-tiempos?parada=${stopId}&linea=${BUS.open}`) }); } catch { BUS.times.set(key, { at: Date.now(), error: true }); }
+  if (BUS.stop !== stopId) return;
+  renderBus();
+  const st = busRoute()?.stops.find((x) => x.id === stopId);
+  if (st && S.mapReady && S.tab === 'bus') {
+    S.popup?.remove();
+    S.popup = new maplibregl.Popup({ offset: 10, maxWidth: '300px' }).setLngLat([st.lon, st.lat])
+      .setHTML(`<div class="pop"><h4>${busBadge(busLine(BUS.open))}<span>${esc(st.name)}</span></h4>${stopDepartures(stopId)}</div>`).addTo(map);
+  }
+}
+
+function drawBus(fit = false) {
+  if (!S.mapReady) return;
+  const l = busLine(BUS.open);
+  const r = l && busRoute();
+  const coords = r ? r.stops.map((st) => [st.lon, st.lat]) : [];
+  map.getSource('bus-ruta')?.setData(r ? { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: { color: l.color } }] } : empty);
+  map.getSource('bus-paradas')?.setData(r ? { type: 'FeatureCollection', features: r.stops.map((st) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [st.lon, st.lat] }, properties: { id: st.id, name: st.name, color: l.color, sel: BUS.stop === st.id } })) } : empty);
+  if (fit && coords.length > 1 && S.tab === 'bus') fitTo(coords);
+}
+
+$('#bus-search')?.addEventListener('input', (e) => { BUS.q = e.target.value; renderBus(); });
+// Los próximos buses de la parada abierta se renuevan cada 30 s
+setInterval(() => { if (S.tab === 'bus' && BUS.stop && !document.hidden) openBusStop(BUS.stop, true); }, 30_000);
+
 setTab(location.hash.slice(1) || 'rodalies', false);
 refresh();
 refreshRoads();
+loadBusLines();

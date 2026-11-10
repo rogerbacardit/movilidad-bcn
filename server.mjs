@@ -14,6 +14,7 @@ try {
   process.exit(1);
 }
 const { ROOT, EVERY, ensureFresh, buildLive, nextHintSeconds, roadsPayload, historyRow, summary, loadStatic, staticGeneratedAt } = engine;
+const { busLines, busStops, busTimes } = await import('./lib/moventis.mjs');
 
 const PORT = Number(process.env.PORT) || 8080;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -54,6 +55,15 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/live') return sendJson(res, buildLive(), { 'x-data-next': nextHintSeconds().toFixed(1) });
   if (url.pathname === '/api/carreteras') return sendJson(res, roadsPayload());
   if (url.pathname === '/api/history') return sendJson(res, readHistory(Math.min(168, Number(url.searchParams.get('h')) || 24)));
+  // Moventis: bajo demanda (con caché en lib/moventis.mjs)
+  const bus = { '/api/bus-lineas': () => busLines(), '/api/bus-paradas': () => busStops(url.searchParams.get('linea')), '/api/bus-tiempos': () => busTimes(url.searchParams.get('parada'), url.searchParams.get('linea')) }[url.pathname];
+  if (bus) {
+    Promise.resolve().then(bus).then((data) => sendJson(res, data), (err) => {
+      res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: String(err.message ?? err) }));
+    });
+    return;
+  }
 
   const rel = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname).replace(/^\/+/, '');
   const file = path.join(ROOT, 'public', rel);

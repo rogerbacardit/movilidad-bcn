@@ -285,7 +285,43 @@ async function ld() {
   return { products: LD_PRODUCTS, corridors, trips, patterns, stations };
 }
 
-const ops = { renfe: await renfe(), fgc: await fgc() };
+// ── TRAM (Trambaix y Trambesòs, opendata.tram.cat) ───────────────────────────
+// Todas las líneas usan el verde corporativo del TRAM. Cada parada tiene un código por sentido
+// (outboundCode / returnCode), que es el que aparece en los tiempos de paso.
+const TRAM_API = 'https://opendata.tram.cat/api/v1';
+const TRAM_COLOR = '#008d78';
+async function tram() {
+  console.log('TRAM: descargando líneas y paradas…');
+  const get = async (p) => {
+    const r = await fetch(`${TRAM_API}/${p}`, { headers: UA });
+    if (!r.ok) throw new Error(`TRAM ${p} → HTTP ${r.status}`);
+    return r.json();
+  };
+  const lines = {};
+  const stations = {};
+  const shapesByLine = new Map();
+  const shapes = new Map();
+  for (const l of await get('lines')) {
+    // page=0 devuelve todas las paradas de la línea (las demás páginas van de 10 en 10)
+    const stops = (await get(`lines/${l.id}/stops?page=0`)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    for (const s of stops) s.name = String(s.name).replace(/\s*\|\s*/g, ' | '); // «Ciutadella|V.O.» → «Ciutadella | V.O.»
+    if (!stops.length) continue;
+    lines[l.name] = {
+      color: TRAM_COLOR,
+      name: `${stops[0].name} – ${stops.at(-1).name}`,
+      network: l.network?.name ?? null,
+      stops: stops.map((s) => [s.name, +(+s.latitude).toFixed(6), +(+s.longitude).toFixed(6), s.outboundCode, s.returnCode]),
+    };
+    for (const s of stops) stations[s.gtfsCode ?? s.id] = [s.name, +s.latitude, +s.longitude];
+    // Trazado aproximado: las paradas unidas en orden (el TRAM no publica la geometría de la vía)
+    shapesByLine.set(l.name, new Set([`tram-${l.name}`]));
+    shapes.set(`tram-${l.name}`, stops.map((s) => [+(+s.longitude).toFixed(5), +(+s.latitude).toFixed(5)]));
+  }
+  console.log(`TRAM: ${Object.keys(lines).length} líneas, ${Object.keys(stations).length} paradas`);
+  return { lines, stations, shapesByLine, shapes };
+}
+
+const ops = { renfe: await renfe(), fgc: await fgc(), tram: await tram() };
 const ldData = await ld();
 
 const vias = { type: 'FeatureCollection', features: [] };
@@ -313,6 +349,7 @@ const staticData = {
   generatedAt: new Date().toISOString(),
   renfe: { lines: ops.renfe.lines, stations: ops.renfe.stations, tripDest: ops.renfe.tripDest },
   fgc: { lines: ops.fgc.lines, stations: ops.fgc.stations },
+  tram: { lines: ops.tram.lines },
   ld: ldData,
 };
 fs.writeFileSync(path.join(ROOT, 'data', 'static.json'), JSON.stringify(staticData));
