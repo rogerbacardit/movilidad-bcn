@@ -2,7 +2,7 @@
   "name": "movilidad-bcn",
   "version": "0.2.0",
   "private": true,
-  "description": "Mobilitat: Rodalies, FGC, TRAM, AVE, bus Moventis y carreteras de Catalunya en directo, con datos abiertos oficiales.",
+  "description": "BCN MOVE: Rodalies, FGC, TRAM, AVE, bus Moventis y carreteras de Catalunya en directo, con datos abiertos oficiales.",
   "license": "MIT",
   "homepage": "https://movilidad-bcn.vercel.app",
   "repository": {
