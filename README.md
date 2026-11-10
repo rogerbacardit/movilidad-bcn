@@ -165,6 +165,8 @@ Las tarjetas de arriba llevan el logo de cada compañía, en [public/logos/](pub
 | `rodalies.svg` | Símbolo naranja con la «R», recortado de *Rodalies de Catalunya logo.svg* (sin el texto) |
 | `fgc.svg` | *FGC logo (2019).svg* |
 | `ave.svg` | *AVE.svg*; en la tarjeta va sobre una placa blanca para que se vea en modo oscuro |
+| `tram.svg` | *Tram Barcelona negative.svg* (Wikimedia Commons), sobre el verde del TRAM |
+| `moventis-e.png` | La «e» naranja (`#FF6A14`) del logotipo de Moventis, recortada del logo facilitado: solo los píxeles naranjas, con fondo transparente (256 × 256) |
 
 El icono de Carreteras es un pictograma genérico dibujado para esta página, en el azul de las autopistas.
 
