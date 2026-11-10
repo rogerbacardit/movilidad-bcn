@@ -16,16 +16,17 @@
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
+  /* Modo oscuro en negro 100 %: fondo y panel #000; tarjetas en grises muy oscuros para distinguirlas */
   :root:not([data-theme="light"]) {
-    --bg: #121211; --panel: #1b1b19; --text: #ecebe7; --muted: #9c9a94; --line: #2d2c29; --chip: #252422; --chip-2: #2f2e2b;
-    --ok: #3fbf74; --late: #f0a530; --grave: #f0645a; --info: #6ea2f5; --nodata: #77756f; --accent: #ecebe7;
+    --bg: #000000; --panel: #000000; --text: #f2f2f2; --muted: #9a9a9a; --line: #262626; --chip: #141414; --chip-2: #1f1f1f;
+    --ok: #3fbf74; --late: #f0a530; --grave: #f0645a; --info: #6ea2f5; --nodata: #77756f; --accent: #f2f2f2;
     --shadow: 0 1px 2px rgb(0 0 0 / 40%);
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
-  --bg: #121211; --panel: #1b1b19; --text: #ecebe7; --muted: #9c9a94; --line: #2d2c29; --chip: #252422; --chip-2: #2f2e2b;
-  --ok: #3fbf74; --late: #f0a530; --grave: #f0645a; --info: #6ea2f5; --nodata: #77756f; --accent: #ecebe7;
+:root[data-theme="dark"] { /* negro 100 % */
+  --bg: #000000; --panel: #000000; --text: #f2f2f2; --muted: #9a9a9a; --line: #262626; --chip: #141414; --chip-2: #1f1f1f;
+  --ok: #3fbf74; --late: #f0a530; --grave: #f0645a; --info: #6ea2f5; --nodata: #77756f; --accent: #f2f2f2;
   color-scheme: dark;
 }
 
@@ -136,7 +137,7 @@ em { font-style: normal; }
 .pop-occ { display: flex; align-items: center; gap: 8px; }
 .pop-occ span { font-variant-numeric: tabular-nums; }
 /* Indicador de estado del tren, como un panel de aeropuerto (fondo oscuro también en modo claro) */
-.board { display: inline-block; white-space: nowrap; padding: 3px 7px; border-radius: 4px; background: #121211; font: 700 11.5px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.board { display: inline-block; white-space: nowrap; padding: 3px 7px; border-radius: 4px; background: #000000; font: 700 11.5px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
 .board.s0 { color: #3fd57b; }
 .board.s1 { color: #ffb02e; }
 .board.s2 { color: #ff6359; }
@@ -144,7 +145,7 @@ em { font-style: normal; }
 .board, .to { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%); } /* se distingue también sobre fondo oscuro */
 .tr .board { min-width: 128px; text-align: center; } /* columna fija, como en un panel de salidas */
 /* «TO» delante del destino, mismo lenguaje que el indicador */
-.to { display: inline-block; flex: none; padding: 3px 5px; border-radius: 3px; background: #121211; color: #f4f3ef; font: 700 10px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.08em; vertical-align: 2px; }
+.to { display: inline-block; flex: none; padding: 3px 5px; border-radius: 3px; background: #000000; color: #f4f3ef; font: 700 10px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.08em; vertical-align: 2px; }
 
 /* Bus Moventis: buscador, marcas, recorridos y próximas salidas */
 .search { width: 100%; margin: 18px 0 2px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); color: var(--text); font: inherit; font-size: 14px; }
