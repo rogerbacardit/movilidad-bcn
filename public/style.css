@@ -48,7 +48,7 @@ em { font-style: normal; }
 .app { display: grid; grid-template-columns: 420px 1fr; height: 100vh; }
 /* Escritorio: título y tarjetas fijos; solo se desplaza la sección de líneas */
 .panel { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-.panel-top { flex: none; padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
+.panel-top { flex: none; padding: 18px 20px 12px; }
 .panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px 24px; }
 .mapwrap { position: relative; min-height: 0; }
 #map { position: absolute; inset: 0; }
@@ -242,7 +242,7 @@ dialog h2 { font-size: 20px; text-transform: none; letter-spacing: 0; color: var
   .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); height: 100vh; height: 100dvh; }
   .mapwrap { grid-row: 1; }
   .panel { grid-row: 2 / 4; display: grid; grid-template-rows: subgrid; padding: 0; border-right: 0; border-top: 1px solid var(--line); overflow: hidden; }
-  .panel-top { overflow: visible; padding: 5px 12px 7px; border-bottom: 1px solid var(--line); }
+  .panel-top { overflow: visible; padding: 5px 12px 7px; }
   .panel-body { overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 18px; }
   .panel-body > .tabpanel > h2:first-child, .panel-body > .tabpanel > .search:first-child { margin-top: 12px; }
 
